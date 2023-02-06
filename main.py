@@ -71,9 +71,9 @@ def define_model(source_vocab, target_vocab, source_timesteps, target_timesteps,
 	model = Sequential()
 	# add in TextVectorization layer
 	model.add(Embedding(source_vocab, n_units, input_length=source_timesteps, mask_zero=True))
-	model.add(Bidirectional(LSTM(n_units)))
+	model.add(Bidirectional(LSTM(n_units, activity_regularizer=tf.keras.regularizers.L2(0.01))))
 	model.add(RepeatVector(target_timesteps))
-	model.add(Bidirectional(LSTM(n_units, return_sequences=True)))
+	model.add(Bidirectional(LSTM(n_units, return_sequences=True, activity_regularizer=tf.keras.regularizers.L2(0.01))))
 	model.add(TimeDistributed(Dense(target_vocab, activation='softmax')))
 	return model
 
@@ -164,28 +164,28 @@ testX = encode_sequences(deu_tokenizer, deu_length, test[:, 1])
 testY = encode_sequences(eng_tokenizer, eng_length, test[:,0])
 testY = encode_target(testY, eng_vocab_size)
 
-# # uncomment below if you want to define and fit model
-# # define model
-# model = define_model(deu_vocab_size, eng_vocab_size, deu_length, eng_length, 512)
-# model.compile(optimizer = 'adam', loss = 'categorical_crossentropy')
-#
-# # summarize model
-# model.summary()
-# plot_model(model, to_file='model.png', show_shapes=True)
-#
-# # fit model
-# filename = 'model.h5'
-# checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
-# model.fit(trainX, trainY, epochs=30, batch_size=100, validation_data=(testX, testY), callbacks=[checkpoint], verbose=2)
+# uncomment below if you want to define and fit model
+# define model
+model = define_model(deu_vocab_size, eng_vocab_size, deu_length, eng_length, 512)
+model.compile(optimizer = 'adam', loss = 'categorical_crossentropy')
 
-# load model
-model = load_model('model.h5')
-# test on some training sequences
-print('train')
-evaluate_model(model, eng_tokenizer, trainX, train)
-# test on some test sequences
-print('test')
-evaluate_model(model, eng_tokenizer, testX, test)
+# summarize model
+model.summary()
+plot_model(model, to_file='model.png', show_shapes=True)
+
+# fit model
+filename = 'model.h5'
+checkpoint = ModelCheckpoint(filename, monitor='val_loss', verbose=1, save_best_only=True, mode='min')
+model.fit(trainX, trainY, epochs=30, batch_size=100, validation_data=(testX, testY), callbacks=[checkpoint], verbose=2)
+
+# # load model
+# model = load_model('model.h5')
+# # test on some training sequences
+# print('train')
+# evaluate_model(model, eng_tokenizer, trainX, train)
+# # test on some test sequences
+# print('test')
+# evaluate_model(model, eng_tokenizer, testX, test)
 
 # example = testX[4]
 # print(example.shape)
